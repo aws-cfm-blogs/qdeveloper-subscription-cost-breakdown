@@ -34,7 +34,7 @@ TOTAL_COST_QUERY='''
     ELSE 'Others' END 
     '''
 
-session = boto3.Session(profile_name=settings.PROFILE_NAME)
+session = boto3.Session()
 ddb_client = session.client('dynamodb')
 
 def get_q_dev_cost_per_month(year, month):
@@ -127,13 +127,25 @@ def main():
     logger.info("Starting Q Developer subscription cost processing")
     
     try:
-        if len(sys.argv) != 3:
+        current_date = datetime.now()
+
+        if len(sys.argv) == 1:
+            # No arguments provided, use current year and month
+            year = str(current_date.year)
+            month = str(current_date.month).zfill(2)  # Pad with zero if needed
+            logger.info(f"No date provided, using current year and month: {year}-{month}")
+        elif len(sys.argv) == 3:
+            # Both year and month provided
+            year = sys.argv[1]
+            month = sys.argv[2]
+            if(year == 'OPTIONAL'):
+                year = str(current_date.year)
+                month = str(current_date.month).zfill(2)
+        else:
             logger.error("Invalid number of arguments provided")
-            print("Usage: python script_name.py <year> <month>")
+            print("Usage: python script_name.py [year] [month]")
+            print("If no arguments provided, current year and month will be used")
             sys.exit(1)
-        
-        year = sys.argv[1]
-        month = sys.argv[2]
 
         # Validate the input year/month
         try:

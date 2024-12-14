@@ -1,16 +1,19 @@
-import boto3
-from botocore.awsrequest import AWSRequest
-import botocore.session
-from botocore.auth import SigV4Auth
-import requests
+# Standard library imports
 import json
 import logging
+import boto3
+import botocore.session
+from botocore.auth import SigV4Auth
+from botocore.awsrequest import AWSRequest
+from botocore.exceptions import BotoCoreError, ClientError
+import requests
+from requests.exceptions import RequestException, Timeout
 
 import settings
 
 logger = logging.getLogger(__name__)
 
-session = boto3.Session(profile_name=settings.PROFILE_NAME)
+session = boto3.Session()
 idc_client = session.client('identitystore')
 
 def look_up_user_email(resource_id):
@@ -51,18 +54,6 @@ def look_up_user_email(resource_id):
     except Exception as e:
         logger.error(f"Unexpected error looking up user {user_id}: {str(e)}", exc_info=True)
         raise Exception(f"Failed to look up user: {str(e)}")
-
-
-import logging
-import json
-import botocore
-import requests
-from botocore.auth import SigV4Auth
-from botocore.awsrequest import AWSRequest
-from botocore.exceptions import BotoCoreError, ClientError
-from requests.exceptions import RequestException, Timeout
-
-logger = logging.getLogger(__name__)
 
 
 def fetch_user_data(identity_store_id, resource_id, region):
