@@ -6,7 +6,7 @@ Oragnizations need an effective way to chargeback Q Developer subscription charg
 
 The routine provided will query the CUR data using Athena to identify the Q developer subscription charges grouped by the user GUID. It will then look up the user informtion from IAM IDC and store the cost and the user email in a DynamoDB table.
 
-![alt text](Q-Developer-Chargeback.png "Q Developer Chargeback")
+![alt text](Q Developer Chargeback.png "Q Developer Chargeback")
 
 # Installation
 After cloning the repo:
