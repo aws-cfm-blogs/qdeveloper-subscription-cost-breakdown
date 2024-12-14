@@ -1,0 +1,243 @@
+Resources:
+  # ECR Repository
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      EmptyOnDelete: true
+      RepositoryName: q-dev-cost-analyzer
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  # DynamoDB Table (if not already existing)
+  CostAnalyzerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DDBTableName
+      AttributeDefinitions:
+        - AttributeName: user-guid
+          AttributeType: S
+        - AttributeName: time-period
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user-guid
+          KeyType: HASH
+        - AttributeName: time-period
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # Execution Role for Fargate
+  BatchExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      
+  # Batch Job Role
+  BatchJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+      Policies:
+        - PolicyName: AthenaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:GetWorkGroup
+                  - athena:StopQueryExecution
+                  - athena:CreatePreparedStatement
+                  - athena:GetPreparedStatement
+                  - athena:DeletePreparedStatement
+                Resource:
+                  - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${WorkGroup}
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${AthenaResultsBucket}
+                  - !Sub arn:aws:s3:::${AthenaResultsBucket}/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${CURDataBucket}
+                  - !Sub arn:aws:s3:::${CURDataBucket}/*
+
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetTables
+                  - glue:GetTable
+                  - glue:GetPartitions
+                Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${DatabaseName}
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${DatabaseName}/${AthenaTableName}
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt CostAnalyzerTable.Arn
+        - PolicyName: IAMIDCAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - identitystore:DescribeUser
+                  - identitystore:ListUsers
+                Resource: 
+                  - !Sub arn:aws:identitystore::${AWS::AccountId}:identitystore/${IDCStoreId}
+                  - arn:aws:identitystore:::user/*
+              - Effect: Allow
+                Action:
+                  - sso-directory:DescribeUsers
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    "aws:ResourceAccount": !Sub "${AWS::AccountId}"
+                    "aws:RequestedRegion": !Ref "AWS::Region"
+         
+  # Batch Job Definition
+  QDevCostJobDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      JobDefinitionName: q-dev-cost-analyzer
+      Type: container
+      PlatformCapabilities:
+        - FARGATE
+      ContainerProperties:
+        Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:latest
+        JobRoleArn: !GetAtt BatchJobRole.Arn
+        ExecutionRoleArn: !GetAtt BatchExecutionRole.Arn 
+        Command:
+          - Ref::year
+          - Ref::month
+        NetworkConfiguration:
+          AssignPublicIp: ENABLED
+        ResourceRequirements:
+          - Type: VCPU
+            Value: '1'
+          - Type: MEMORY
+            Value: '2048'
+        Environment:
+          - Name: DATABASE_NAME
+            Value: !Ref DatabaseName
+          - Name: ATHENA_TABLE_NAME
+            Value: !Ref AthenaTableName
+          - Name: WORK_GROUP
+            Value: !Ref WorkGroup
+          - Name: DDB_TABLE_NAME
+            Value: !Ref DDBTableName
+          - Name: DDB_PARTITION_KEY
+            Value: user-guid
+          - Name: DDB_SORT_KEY
+            Value: time-period
+          - Name: RESULT_LOCATION
+            Value: !Sub "s3://${AthenaResultsBucket}"
+          - Name: IDC_STORE_ID
+            Value: !Ref IDCStoreId
+      Parameters:
+        year: OPTIONAL
+        month: OPTIONAL
+      RetryStrategy:
+        Attempts: 2
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Athena Query Configuration"
+        Parameters:
+          - DatabaseName
+          - AthenaTableName
+          - WorkGroup
+          - AthenaResultsBucket
+          - CURDataBucket
+      - Label:
+          default: "IAM IDC Configuration"
+        Parameters:
+          - IDCStoreId
+      - Label:
+          default: "DynamoDB Configuration"
+        Parameters:
+          - DDBTableName
+      
+    ParameterLabels:
+      DatabaseName:
+        default: "Athena Database Name"
+      AthenaTableName:
+        default: "Athena Table Name"
+      WorkGroup:
+        default: "Athena Workgroup"
+      AthenaResultsBucket:
+        default: "S3 Bucket for Athena Query Results"
+      CURDataBucket:
+        default: "S3 Bucket with CUR Data"
+      DDBTableName:
+        default: "DynamoDB Table Name"
+      IDCStoreId:
+        default: "IAM IDC Store ID"
+
+Parameters:
+  DatabaseName:
+    Type: String
+    Default: athena_cur
+  AthenaTableName:
+    Type: String
+    Default: cur_report
+  WorkGroup:
+    Type: String
+    Default: primary
+  AthenaResultsBucket:
+    Type: String
+    Description: S3 bucket for Athena query results
+  CURDataBucket:
+    Type: String
+    Description: S3 bucket with CUR data
+  DDBTableName:
+    Type: String
+    Default: q-developer-subscription-cost-by-user
+  IDCStoreId:
+    Type: String
+    Description: IAM IDC Store ID for the subscription
+
+Outputs:
+  ECRRepositoryUri:
+    Description: ECR Repository URI
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}
+  JobDefinitionArn:
+    Description: Job Definition ARN
+    Value: !Ref QDevCostJobDefinition
