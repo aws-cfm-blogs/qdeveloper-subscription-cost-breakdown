@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables from .env file
-load_dotenv()
+#load_dotenv()
 
 PROFILE_NAME=os.getenv('PROFILE_NAME')
 

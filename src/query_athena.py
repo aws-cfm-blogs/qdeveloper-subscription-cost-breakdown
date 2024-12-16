@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 
 import settings
 
-session = boto3.Session(profile_name=settings.PROFILE_NAME)
+session = boto3.Session()
 athena_client = session.client('athena')
 
 
@@ -79,6 +79,7 @@ def run_query(query_string, year, month):
                 logger.debug(f"Retrieved {len(query_results)} rows")
                 break
             elif state == 'FAILED':
+                error_message = query_status['QueryExecution']['Status']['StateChangeReason']
                 logger.error(f"Query failed: {error_message}")
                 raise AthenaQueryError(f"Query failed: {error_message}")
             elif state == 'CANCELLED':
