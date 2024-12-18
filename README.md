@@ -1,13 +1,17 @@
-# Q Developer Subscription Cost Breakdown
+# Amazon Q Developer Subscription Cost Breakdown
 
 
 
-Oragnizations need an effective way to chargeback Q Developer subscription charges. These charges are accumulated at the payer level and the large enterprises need to distribute those charges to the corresponding business units. 
+Oragnizations need an effective way to chargeback Amazon Q Developer subscription charges. These charges are accumulated at the payer level and the large enterprises need to distribute those charges to the corresponding business units. 
 
-The routine provided will query the CUR data using Athena to identify the Q developer subscription charges grouped by the user GUID. It will then look up the user informtion from IAM IDC and store the cost and the user email in a DynamoDB table.
+The routine provided will query the CUR data using Athena to identify the Q developer subscription charges grouped by the user GUID. It will then look up the user information from IAM IDC and store the cost and the user email in a DynamoDB table.
 
 ![alt text](Q-Developer-Chargeback.png "Q Developer Chargeback")
 
+# Prerequisites
+1.	At the payer level, verify if an [AWS CUR 2.0](https://docs.aws.amazon.com/cur/latest/userguide/table-dictionary-cur2.html) exist in AWS Data Exports. If not, create one with the Include resource IDs option selected.
+2. Setup CUR querying using Amazon Athena following the [instructions](https://docs.aws.amazon.com/cur/latest/userguide/cur-query-athena.html).  
+3. Create an [AWS Batch job queue](https://docs.aws.amazon.com/batch/latest/userguide/create-job-queue.html) if one does not exist to run the subscription cost analysis as a containerized job. 
 # Installation
 After cloning the repo:
 1. Deploy the CloudFormation template using ``template.yaml``
