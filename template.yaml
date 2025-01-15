@@ -169,6 +169,9 @@ Resources:
             Value: !Sub "s3://${AthenaResultsBucket}"
           - Name: IDC_STORE_ID
             Value: !Ref IDCStoreId
+          - Name: IDC_COST_CENTER_ATTRIBUTE_NAME
+            Value: !Ref IDCCostCenterAttributeName
+          
       Parameters:
         year: OPTIONAL
         month: OPTIONAL
@@ -190,6 +193,7 @@ Metadata:
           default: "IAM IDC Configuration"
         Parameters:
           - IDCStoreId
+          - IDCCostCenterAttributeName
       - Label:
           default: "DynamoDB Configuration"
         Parameters:
@@ -210,6 +214,8 @@ Metadata:
         default: "DynamoDB Table Name"
       IDCStoreId:
         default: "IAM IDC Store ID"
+      IDCCostCenterAttributeName:
+        default: "IAM IDC Cost Center Attribute Name"
 
 Parameters:
   DatabaseName:
@@ -233,7 +239,9 @@ Parameters:
   IDCStoreId:
     Type: String
     Description: IAM IDC Store ID for the subscription
-
+  IDCCostCenterAttributeName:
+    Type: String
+    Description: IAM IDC Cost Center Attribute Name for the subscription charges
 Outputs:
   ECRRepositoryUri:
     Description: ECR Repository URI
