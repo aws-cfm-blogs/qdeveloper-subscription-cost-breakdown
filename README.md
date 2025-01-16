@@ -30,7 +30,7 @@ After cloning the repo:
     ### DynamoDB Configuration
     - **DDBTableName**: The name of the DynamoDB table to store cost data (Default: q-developer-subscription-cost-by-user)
 
-2. Build the Docker container and push it to ECR
+2. Build the Docker container for the batch job and push it to ECR
 
 
 ```
