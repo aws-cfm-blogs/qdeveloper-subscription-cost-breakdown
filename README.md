@@ -14,9 +14,7 @@ The routine provided will query the CUR data using Athena to identify the Q deve
 3. Create an [AWS Batch job queue](https://docs.aws.amazon.com/batch/latest/userguide/create-job-queue.html) if one does not exist to run the subscription cost analysis as a containerized job. 
 # Installation
 After cloning the repo:
-1. Deploy the CloudFormation template using ``template.yaml``.
-
-    Provide values for the following parameters:
+1. Deploy the CloudFormation template using ``template.yaml`` by providing values for the following parameters:
 
     ### Athena Query Configuration
     - **DatabaseName**: The name of the Athena database (Default: athena_cur)
