@@ -14,9 +14,23 @@ The routine provided will query the CUR data using Athena to identify the Q deve
 3. Create an [AWS Batch job queue](https://docs.aws.amazon.com/batch/latest/userguide/create-job-queue.html) if one does not exist to run the subscription cost analysis as a containerized job. 
 # Installation
 After cloning the repo:
-1. Deploy the CloudFormation template using ``template.yaml``
+1. Deploy the CloudFormation template using ``template.yaml`` by providing values for the following parameters:
 
-2. Build the Docker container and push it to ECR
+    ### Athena Query Configuration
+    - **DatabaseName**: The name of the Athena database (Default: athena_cur)
+    - **AthenaTableName**: The name of the Athena table (Default: cur_report)
+    - **WorkGroup**: The Athena workgroup to use (Default: primary)
+    - **AthenaResultsBucket**: The S3 bucket where Athena query results will be stored
+    - **CURDataBucket**: The S3 bucket containing the Cost and Usage Report (CUR) data
+
+    ### IAM IDC Configuration
+    - **IDCStoreId**: The IAM Identity Center (IDC) Store ID
+    - **IDCCostCenterAttributeName**: The attribute name in IAM IDC that represents the cost center for subscription charges
+
+    ### DynamoDB Configuration
+    - **DDBTableName**: The name of the DynamoDB table to store cost data (Default: q-developer-subscription-cost-by-user)
+
+2. Build the Docker container for the batch job and push it to ECR
 
 
 ```

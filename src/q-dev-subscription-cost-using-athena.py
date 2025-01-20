@@ -88,7 +88,7 @@ def save_cost_per_user(subscription_cost_results, total_cost_results, year, mont
 
                     cost = float(data[1]['VarCharValue'])
                     email = query_idc.look_up_user_email(resource_id)
-                    cost_center = query_idc.look_up_cost_center(resource_id,"costCenter")
+                    cost_center = query_idc.look_up_cost_center(resource_id,settings.IDC_COST_CENTER_ATTRIBUTE)
 
                     #Add any tax/refund to the total cost
                     if(total_other_cost !=0):
