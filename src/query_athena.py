@@ -46,8 +46,11 @@ def run_query(query_string, year, month):
             QueryStatement=query_string.format(settings.ATHENA_TABLE_NAME)
         )
         logger.debug(f"Prepared statement created successfully: {create_prepared_statement_response}")
+        
+        #Convert Year and Month to a billing period in CUR 2.0
+        billing_period = f"{year}-{int(month):02d}"  
 
-        execute_query = f"EXECUTE {statement_name} USING '{year}', '{month}'"
+        execute_query = f"EXECUTE {statement_name} USING '{billing_period}'"
         logger.debug(f"Executing query: {execute_query}")
         
         query_execution = athena_client.start_query_execution(

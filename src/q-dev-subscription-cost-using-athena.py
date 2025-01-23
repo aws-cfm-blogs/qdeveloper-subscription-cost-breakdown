@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 SUBSCRIPTION_COST_QUERY='''
     SELECT line_item_resource_id, sum(line_item_unblended_cost) as per_user_cost
     FROM {0}
-    WHERE year=? AND month=? 
+    WHERE billing_period=? 
     AND line_item_product_code='AmazonQ' 
     AND line_item_operation='number-q-dev-subscriptions'
     GROUP BY line_item_resource_id;
@@ -28,7 +28,7 @@ TOTAL_COST_QUERY='''
     SELECT CASE WHEN line_item_line_item_type = 'Usage' THEN 'Subscription'
     ELSE 'Others' END AS cost_type, sum(line_item_unblended_cost) as total_cost 
     FROM {0} 
-    where line_item_product_code ='AmazonQ' and year=? and month=? 
+    where line_item_product_code ='AmazonQ' and billing_period=? 
     and line_item_operation='number-q-dev-subscriptions'
     GROUP BY CASE WHEN line_item_line_item_type = 'Usage' THEN 'Subscription'
     ELSE 'Others' END 
