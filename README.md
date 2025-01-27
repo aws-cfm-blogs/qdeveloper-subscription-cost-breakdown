@@ -55,7 +55,7 @@ aws batch submit-job \
     --job-name q-dev-cost-analysis \
     --job-queue {your-job-queue} \
     --job-definition q-dev-cost-analyzer \
-    --parameters '{"year":"{yyyy}","month":"{mm}"}'
+    --parameters '{"year":"yyyy","month":"mm"}'
 
 ```
 

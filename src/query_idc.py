@@ -158,11 +158,29 @@ def look_up_cost_center(user_id, attribute_name):
         attribute_name: Name of the attribute to look up
         
     Returns:
-        User's cost center
+        User's cost center or None if not found
     """
     logger.info(f"Looking up {attribute_name} for user ID: {user_id}")
-    userInfo = json.loads(fetch_user_data(settings.IDC_STORE_ID,user_id, 'us-east-1').text)
-    return (userInfo['Users'][0]['UserAttributes']['enterprise']['ComplexValue'][attribute_name]['StringValue'])
+    try:
+        userInfo = json.loads(fetch_user_data(settings.IDC_STORE_ID, user_id, 'us-east-1').text)
+        
+        # Safely navigate through the nested structure
+        value = (userInfo
+                .get('Users', [{}])[0]
+                .get('UserAttributes', {})
+                .get('enterprise', {})
+                .get('ComplexValue', {})
+                .get(attribute_name, {})
+                .get('StringValue'))
+        
+        return value if value is not None else ''
+                
+    except (IndexError, AttributeError, json.JSONDecodeError) as e:
+        logger.error(f"Error retrieving {attribute_name} for user {user_id}: {str(e)}")
+        return ''
+    except Exception as e:
+        logger.error(f"Unexpected error looking up {attribute_name} for user {user_id}: {str(e)}")
+        return ''
 
 class UserDataFetchError(Exception):
     """Custom exception for user data fetch errors"""
